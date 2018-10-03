@@ -6,43 +6,40 @@ import numpy as np
 class WordEmbeddingEngine:
 
     def __init__(self, fname, maxwords=-1):
-        self.vdata = {}
-        self.load_vectors(fname=fname,maxwords=maxwords)
-
-    def load_vectors(self, fname, maxwords=-1):
-        fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
-        n,d = map(int, fin.readline().split())
-        self._word_count = n
-        self._vector_dimension = d
-        words_to_load = maxwords if maxwords > 0 else self._word_count
-        len = 0
-        for line in fin:
-            tokens = line.rstrip().split(' ')
-            self.vdata[tokens[0]] = map(float, tokens[1:])
-            len = len+1
-            if len >= words_to_load:
-                break
-        self._loaded_words = len
-        print(f'{self._loaded_words} words with {self._vector_dimension} dimension loaded ')
-        return self._loaded_words
+        self.fname = fname
+        self.word_count = 0
+        self.loaded_words = 0
+        self.vector_dimension = np.nan
+        self._vdata = {}
+        self._load_vectors(fname=self.fname,maxwords=maxwords)
 
     def distance(self, w1,w2):
-        try :
-            v1 = self._w2v(w1)
-            v2 = self._w2v(w2)
-
-        except Exception as ex:
-            print(ex)
-            return np.nan, np.nan
-
+        v1 = self[w1]
+        v2 = self[w2]
         norm = np.linalg.norm(v2 - v1)
         cosine = np.inner(v2,v1) / (np.linalg.norm(v1) * np.linalg.norm(v2))
         return norm , cosine
 
-    def _w2v(self, word):
-        if word not in self.vdata:
-            raise Exception(f'{word} not exists in vdata')
-        return np.array(list(self.vdata[word]))
+    def __getitem__(self, word):
+        if word not in self._vdata:
+            raise Exception(f'{word} not exists in {self.fname}')
+        return self._vdata[word]
+
+    def _load_vectors(self, fname, maxwords=-1):
+        fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
+        n,d = map(int, fin.readline().split())
+        self.word_count = n
+        self.vector_dimension = d
+        words_to_load = maxwords if maxwords > 0 else self.word_count
+        len = 0
+        for line in fin:
+            tokens = line.rstrip().split(' ')
+            self._vdata[tokens[0]] = np.array(list(map(float, tokens[1:])))
+            len = len+1
+            if len >= words_to_load:
+                break
+        self.loaded_words = len
+
 
 
 if __name__ == '__main__':
@@ -56,7 +53,15 @@ if __name__ == '__main__':
 
     print(f'loading words from {fname}')
     engine = WordEmbeddingEngine(fname=fname, maxwords=maxwords)
-    norm , cosine = engine.distance(w1, w2)
-    if norm >= 0:
-        print(f'{w1[::-1]} - {w2[::-1]} : norm={norm} cosine={cosine}')
+    print(f'{engine.loaded_words} words with {engine.vector_dimension} dimension loaded from {engine.word_count} '
+          f'words in {engine.fname}')
+
+    try:
+        norm , cosine = engine.distance(w1, w2)
+        if norm >= 0:
+            print(f'{w1[::-1]} - {w2[::-1]} : norm={norm} cosine={cosine}')
+
+    except Exception as ex:
+        print(ex)
+
 
