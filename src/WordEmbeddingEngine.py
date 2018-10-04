@@ -1,9 +1,16 @@
 import io
 import sys
 from collections import namedtuple
+import sortedcontainers as sc
+
 import numpy as np
 
 MatchDistance = namedtuple('MatchDistance', ['source_word', 'target_word', 'norm','cosine'])
+
+# key element for sort
+def sortkey(elem):
+    return elem.norm
+
 
 class WordEmbeddingEngine:
 
@@ -24,15 +31,14 @@ class WordEmbeddingEngine:
                         norm=np.linalg.norm(v2 - v1),
                         cosine=np.inner(v2,v1) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
 
+
     def top_match(self, source_word):
-        min_distance = None
-        for word in self._vdata:
-            if word != source_word:
-                distance = self.distance(source_word, word)
-                if min_distance is None or min_distance.norm > distance.norm:
-                    min_distance = MatchDistance(source_word=source_word, target_word=word,
-                                                 norm=distance.norm, cosine=distance.cosine)
-        return min_distance
+        topten = sc.SortedListWithKey(key=sortkey)
+        for word in [w for w in self._vdata if w != source_word]:
+            topten.add(self.distance(source_word, word))
+            if len(topten) > 10:
+                topten.pop()
+        return topten
 
     def __getitem__(self, word):
         if word not in self._vdata:
@@ -69,7 +75,7 @@ if __name__ == '__main__':
           f'words in {engine.fname}')
 
     if len(sys.argv) == 3:
-        print (f'no words in arguments ',
+        print(f'no words in arguments ',
                f'usage: python {sys.argv[0]} <vector_file_name> <max-words> <word1> <word2>')
         exit(0)
 
@@ -77,8 +83,9 @@ if __name__ == '__main__':
 
     # if one word supplied find top ten matches by distance
     if len(sys.argv) == 4:
-        match = engine.top_match(w1)
-        print(f'top match for {w1} : {match}')
+        top_matches = engine.top_match(w1)
+        log = '\n'.join([str(match) for match in top_matches])
+        print(f'top match for {w1}: \n {log}')
         exit(0)
 
     # if input have 2 words find the distance
@@ -91,5 +98,3 @@ if __name__ == '__main__':
 
     except Exception as ex:
         print(ex)
-
-
