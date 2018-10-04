@@ -1,7 +1,9 @@
 import io
 import sys
+from collections import namedtuple
 import numpy as np
 
+MatchDistance = namedtuple('MatchDistance', ['source_word', 'target_word', 'norm','cosine'])
 
 class WordEmbeddingEngine:
 
@@ -13,17 +15,30 @@ class WordEmbeddingEngine:
         self._vdata = {}
         self._load_vectors(fname=self.fname,maxwords=maxwords)
 
+
     def distance(self, w1,w2):
         v1 = self[w1]
         v2 = self[w2]
-        norm = np.linalg.norm(v2 - v1)
-        cosine = np.inner(v2,v1) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-        return norm , cosine
+        return MatchDistance(source_word=w1,
+                        target_word=w2,
+                        norm=np.linalg.norm(v2 - v1),
+                        cosine=np.inner(v2,v1) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+
+    def top_match(self, source_word):
+        min_distance = None
+        for word in self._vdata:
+            if word != source_word:
+                distance = self.distance(source_word, word)
+                if min_distance is None or min_distance.norm > distance.norm:
+                    min_distance = MatchDistance(source_word=source_word, target_word=word,
+                                                 norm=distance.norm, cosine=distance.cosine)
+        return min_distance
 
     def __getitem__(self, word):
         if word not in self._vdata:
             raise Exception(f'{word} not exists in {self.fname}')
         return self._vdata[word]
+
 
     def _load_vectors(self, fname, maxwords=-1):
         fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
@@ -43,23 +58,36 @@ class WordEmbeddingEngine:
 
 
 if __name__ == '__main__':
-    if len(sys.argv) < 5 :
+    if len(sys.argv) < 3 :
         print (f'usage: python {sys.argv[0]} <vector_file_name> <max-words> <word1> <word2>')
         exit(1)
     fname = sys.argv[1]
     maxwords = int(sys.argv[2])
-    w1 = sys.argv[3]
-    w2 = sys.argv[4]
-
     print(f'loading words from {fname}')
     engine = WordEmbeddingEngine(fname=fname, maxwords=maxwords)
     print(f'{engine.loaded_words} words with {engine.vector_dimension} dimension loaded from {engine.word_count} '
           f'words in {engine.fname}')
 
+    if len(sys.argv) == 3:
+        print (f'no words in arguments ',
+               f'usage: python {sys.argv[0]} <vector_file_name> <max-words> <word1> <word2>')
+        exit(0)
+
+    w1 = sys.argv[3]
+
+    # if one word supplied find top ten matches by distance
+    if len(sys.argv) == 4:
+        match = engine.top_match(w1)
+        print(f'top match for {w1} : {match}')
+        exit(0)
+
+    # if input have 2 words find the distance
+    w2 = sys.argv[4]
+
     try:
-        norm , cosine = engine.distance(w1, w2)
-        if norm >= 0:
-            print(f'{w1[::-1]} - {w2[::-1]} : norm={norm} cosine={cosine}')
+        match_dist = engine.distance(w1, w2)
+        if match_dist.norm >= 0:
+            print(f'{match_dist.source_word} - {match_dist.target_word} : norm={match_dist.norm} cosine={match_dist.cosine}')
 
     except Exception as ex:
         print(ex)
