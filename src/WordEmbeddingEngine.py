@@ -19,8 +19,10 @@ class WordEmbeddingEngine:
         self.word_count = 0
         self.loaded_words = 0
         self.vector_dimension = np.nan
+        self.right2left = '.ar.' in self.fname or '.he.' in self.fname
         self._vdata = {}
         self._load_vectors(fname=self.fname,maxwords=maxwords)
+
 
 
     def distance(self, w1,w2):
@@ -39,6 +41,12 @@ class WordEmbeddingEngine:
             if len(topten) > 10:
                 topten.pop()
         return topten
+
+    def print_match(self,match):
+        if self.right2left:
+            return f'{match.source_word[::-1]} ==> {match.target_word[::-1]}\t\tnorm={match.norm}\tcosine={match.cosine}'
+        else:
+            return f'{match.source_word} ==> {match.target_word}\t\tnorm={match.norm}\tcosine={match.cosine}'
 
     def __getitem__(self, word):
         if word not in self._vdata:
@@ -84,8 +92,8 @@ if __name__ == '__main__':
     # if one word supplied find top ten matches by distance
     if len(sys.argv) == 4:
         top_matches = engine.top_match(w1)
-        log = '\n'.join([str(match) for match in top_matches])
-        print(f'top match for {w1}: \n {log}')
+        log = '\n'.join([engine.print_match(m) for m in top_matches])
+        print(f'top match:\n{log}')
         exit(0)
 
     # if input have 2 words find the distance
@@ -94,7 +102,7 @@ if __name__ == '__main__':
     try:
         match_dist = engine.distance(w1, w2)
         if match_dist.norm >= 0:
-            print(f'{match_dist.source_word} - {match_dist.target_word} : norm={match_dist.norm} cosine={match_dist.cosine}')
+            print(engine.print_match(match_dist))
 
     except Exception as ex:
         print(ex)
