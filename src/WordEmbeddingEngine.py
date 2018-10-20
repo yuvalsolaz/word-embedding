@@ -5,6 +5,10 @@ import sortedcontainers as sc
 
 import numpy as np
 
+# for presentations :
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+
 MatchDistance = namedtuple('MatchDistance', ['source_word', 'target_word', 'norm','cosine'])
 
 # key element for sort
@@ -69,6 +73,14 @@ class WordEmbeddingEngine:
                 break
         self.loaded_words = len
 
+    def tsne_view(self, words):
+        tsne = TSNE()
+        embed_tsne = tsne.fit_transform(embedding[:words, :])
+        fig, ax = plt.subplots(figsize=(14, 14))
+        for idx in range(words):
+            plt.scatter(*embed_tsne[idx, :], color='steelblue')
+            plt.annotate(int_to_vocab[idx], (embed_tsne[idx, 0], embed_tsne[idx, 1]), alpha=0.7)
+
 
 
 if __name__ == '__main__':
@@ -94,6 +106,7 @@ if __name__ == '__main__':
         top_matches = engine.top_match(w1)
         log = '\n'.join([engine.print_match(m) for m in top_matches])
         print(f'top match:\n{log}')
+        # engine.tsne_view(top_matches)
         exit(0)
 
     # if input have 2 words find the distance
