@@ -8,6 +8,7 @@ import numpy as np
 # for presentations :
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+import tensorflow as tf
 
 MatchDistance = namedtuple('MatchDistance', ['source_word', 'target_word', 'norm','cosine'])
 
@@ -25,6 +26,8 @@ class WordEmbeddingEngine:
         self.vector_dimension = np.nan
         self.right2left = '.ar.' in self.fname or '.he.' in self.fname
         self._vdata = {}
+        self.m = None
+        self.m_initialized = False
         self._load_vectors(fname=self.fname,maxwords=maxwords)
 
 
@@ -67,14 +70,24 @@ class WordEmbeddingEngine:
         len = 0
         for line in fin:
             tokens = line.rstrip().split(' ')
-            self._vdata[tokens[0]] = np.array(list(map(float, tokens[1:])))
+            vec = np.array(list(map(float, tokens[1:])))
+            self._vdata[tokens[0]] = vec
             len = len+1
             if len >= words_to_load:
                 break
+
+            # build tensor value for tsne:
+            if not self.m_initialized:
+                self.m = vec
+                self.m_initialized = True
+            else:
+                self.m = np.vstack((self.m, vec))
+
         self.loaded_words = len
 
     def tsne_view(self, words):
         tsne = TSNE()
+        embedding = tf.Variable(self.m)
         embed_tsne = tsne.fit_transform(embedding[:words, :])
         fig, ax = plt.subplots(figsize=(14, 14))
         for idx in range(words):
@@ -106,7 +119,7 @@ if __name__ == '__main__':
         top_matches = engine.top_match(w1)
         log = '\n'.join([engine.print_match(m) for m in top_matches])
         print(f'top match:\n{log}')
-        # engine.tsne_view(top_matches)
+        engine.tsne_view()
         exit(0)
 
     # if input have 2 words find the distance
