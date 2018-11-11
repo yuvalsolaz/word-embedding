@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import tensorflow as tf
+from tensorflow.contrib.tensorboard.plugins import projector
 
 MatchDistance = namedtuple('MatchDistance', ['source_word', 'target_word', 'norm','cosine'])
 
@@ -87,13 +88,33 @@ class WordEmbeddingEngine:
 
     def tsne_view(self, words):
         tsne = TSNE()
-        embedding = tf.Variable(self.m)
-        embed_tsne = tsne.fit_transform(embedding[:words, :])
+        embedding = tf.Variable(self.m[:100])
+        #embed_tsne = tsne.fit_transform(embedding[:words, :])
+        embed_tsne = tsne.fit_transform(embedding)
         fig, ax = plt.subplots(figsize=(14, 14))
         for idx in range(words):
             plt.scatter(*embed_tsne[idx, :], color='steelblue')
             plt.annotate(int_to_vocab[idx], (embed_tsne[idx, 0], embed_tsne[idx, 1]), alpha=0.7)
 
+
+    def tensorboard_view(self):
+        df_pca = pd.DataFrame(pca.fit_transform(df))
+        df_pca = df_pca.values
+        ## TensorFlow Variable from data
+        tf_data = tf.Variable(df_pca)
+        ## Running TensorFlow Session
+        with tf.Session() as sess:
+            saver = tf.train.Saver([tf_data])
+            sess.run(tf_data.initializer)
+            saver.save(sess, os.path.join(LOG_DIR, 'tf_data.ckpt'))
+            config = projector.ProjectorConfig()
+        # One can add multiple embeddings.
+            embedding = config.embeddings.add()
+            embedding.tensor_name = tf_data.name
+            # Link this tensor to its metadata(Labels) file
+            embedding.metadata_path = metadata
+            # Saves a config file that TensorBoard will read during startup.
+            projector.visualize_embeddings(tf.summary.FileWriter(LOG_DIR), config)
 
 
 if __name__ == '__main__':
@@ -119,7 +140,7 @@ if __name__ == '__main__':
         top_matches = engine.top_match(w1)
         log = '\n'.join([engine.print_match(m) for m in top_matches])
         print(f'top match:\n{log}')
-        engine.tsne_view()
+        engine.tsne_view(top_matches)
         exit(0)
 
     # if input have 2 words find the distance
