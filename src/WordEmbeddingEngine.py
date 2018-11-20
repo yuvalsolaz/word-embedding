@@ -1,10 +1,12 @@
 import io
 import sys
+import os
 from collections import namedtuple
 import sortedcontainers as sc
 
 import numpy as np
-
+import pandas as pd
+from sklearn.decomposition import PCA
 # for presentations :
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
@@ -17,6 +19,7 @@ MatchDistance = namedtuple('MatchDistance', ['source_word', 'target_word', 'norm
 def sortkey(elem):
     return elem.norm
 
+LOG_DIR = '.'
 
 class WordEmbeddingEngine:
 
@@ -86,6 +89,7 @@ class WordEmbeddingEngine:
 
         self.loaded_words = len
 
+
     def tsne_view(self, words):
         tsne = TSNE()
         embedding = tf.Variable(self.m[:100])
@@ -98,6 +102,9 @@ class WordEmbeddingEngine:
 
 
     def tensorboard_view(self):
+        # Generating PCA and
+        pca = PCA(n_components=50, random_state = 123, svd_solver = 'auto')
+        df = pd.DataFrame(self._vdata)
         df_pca = pd.DataFrame(pca.fit_transform(df))
         df_pca = df_pca.values
         ## TensorFlow Variable from data
@@ -112,7 +119,7 @@ class WordEmbeddingEngine:
             embedding = config.embeddings.add()
             embedding.tensor_name = tf_data.name
             # Link this tensor to its metadata(Labels) file
-            embedding.metadata_path = metadata
+            # embedding.metadata_path = metadata
             # Saves a config file that TensorBoard will read during startup.
             projector.visualize_embeddings(tf.summary.FileWriter(LOG_DIR), config)
 
@@ -140,7 +147,8 @@ if __name__ == '__main__':
         top_matches = engine.top_match(w1)
         log = '\n'.join([engine.print_match(m) for m in top_matches])
         print(f'top match:\n{log}')
-        engine.tsne_view(top_matches)
+        engine.tensorboard_view()
+        #engine.tsne_view(top_matches)
         exit(0)
 
     # if input have 2 words find the distance
