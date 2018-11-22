@@ -87,14 +87,8 @@ class WordEmbeddingEngine:
 
     def tensorboard_view(self, words=None):
         data = self._vdata
-        df = pd.DataFrame(data.values())
+        df = pd.DataFrame(data)
         tf_data = tf.Variable(df[words].values)
-
-        # metadata :
-        metadata = os.path.join(LOG_DIR, 'metadata.tsv')
-        with open(metadata, 'w') as metadata_file:
-            for word in words:
-                metadata_file.write('%d\n' % word)
 
         ## Running TensorFlow Session
         with tf.Session() as sess:
@@ -106,6 +100,12 @@ class WordEmbeddingEngine:
             embedding = config.embeddings.add()
             embedding.tensor_name = tf_data.name
             # Link this tensor to its metadata(Labels) file
+            # metadata :
+            metadata = os.path.join(LOG_DIR, 'metadata.tsv')
+            with open(metadata, 'w+') as metadata_file:
+                for word in words:
+                    metadata_file.write(f'{word}\n')
+
             embedding.metadata_path = metadata
             # Saves a config file that TensorBoard will read during startup.
             projector.visualize_embeddings(tf.summary.FileWriter(LOG_DIR), config)
