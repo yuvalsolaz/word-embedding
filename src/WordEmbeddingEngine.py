@@ -19,7 +19,7 @@ MatchDistance = namedtuple('MatchDistance', ['source_word', 'target_word', 'norm
 def sortkey(elem):
     return elem.norm
 
-LOG_DIR = '.'
+LOG_DIR = '../tensorboard'
 
 class WordEmbeddingEngine:
 
@@ -34,8 +34,6 @@ class WordEmbeddingEngine:
         self.m_initialized = False
         self._load_vectors(fname=self.fname,maxwords=maxwords)
 
-
-
     def distance(self, w1,w2):
         v1 = self[w1]
         v2 = self[w2]
@@ -43,7 +41,6 @@ class WordEmbeddingEngine:
                         target_word=w2,
                         norm=np.linalg.norm(v2 - v1),
                         cosine=np.inner(v2,v1) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
-
 
     def top_match(self, source_word):
         topten = sc.SortedListWithKey(key=sortkey)
@@ -63,7 +60,6 @@ class WordEmbeddingEngine:
         if word not in self._vdata:
             raise Exception(f'{word} not exists in {self.fname}')
         return self._vdata[word]
-
 
     def _load_vectors(self, fname, maxwords=-1):
         fin = io.open(fname, 'r', encoding='utf-8', newline='\n', errors='ignore')
@@ -89,6 +85,30 @@ class WordEmbeddingEngine:
 
         self.loaded_words = len
 
+    def tensorboard_view(self, words=None):
+        data = self._vdata
+        df = pd.DataFrame(data.values())
+        tf_data = tf.Variable(df[words].values)
+
+        # metadata :
+        metadata = os.path.join(LOG_DIR, 'metadata.tsv')
+        with open(metadata, 'w') as metadata_file:
+            for word in words:
+                metadata_file.write('%d\n' % word)
+
+        ## Running TensorFlow Session
+        with tf.Session() as sess:
+            saver = tf.train.Saver([tf_data])
+            sess.run(tf_data.initializer)
+            saver.save(sess, os.path.join(LOG_DIR, 'tf_data.ckpt'))
+            config = projector.ProjectorConfig()
+            # One can add multiple embeddings.
+            embedding = config.embeddings.add()
+            embedding.tensor_name = tf_data.name
+            # Link this tensor to its metadata(Labels) file
+            embedding.metadata_path = metadata
+            # Saves a config file that TensorBoard will read during startup.
+            projector.visualize_embeddings(tf.summary.FileWriter(LOG_DIR), config)
 
     def tsne_view(self, words):
         tsne = TSNE()
@@ -100,28 +120,12 @@ class WordEmbeddingEngine:
             plt.scatter(*embed_tsne[idx, :], color='steelblue')
             plt.annotate(int_to_vocab[idx], (embed_tsne[idx, 0], embed_tsne[idx, 1]), alpha=0.7)
 
-
-    def tensorboard_view(self):
+    def pca_view(self):
         # Generating PCA and
         pca = PCA(n_components=50, random_state = 123, svd_solver = 'auto')
-        df = pd.DataFrame(self._vdata)
+        df = pd.DataFrame(data)
         df_pca = pd.DataFrame(pca.fit_transform(df))
         df_pca = df_pca.values
-        ## TensorFlow Variable from data
-        tf_data = tf.Variable(df_pca)
-        ## Running TensorFlow Session
-        with tf.Session() as sess:
-            saver = tf.train.Saver([tf_data])
-            sess.run(tf_data.initializer)
-            saver.save(sess, os.path.join(LOG_DIR, 'tf_data.ckpt'))
-            config = projector.ProjectorConfig()
-        # One can add multiple embeddings.
-            embedding = config.embeddings.add()
-            embedding.tensor_name = tf_data.name
-            # Link this tensor to its metadata(Labels) file
-            # embedding.metadata_path = metadata
-            # Saves a config file that TensorBoard will read during startup.
-            projector.visualize_embeddings(tf.summary.FileWriter(LOG_DIR), config)
 
 
 if __name__ == '__main__':
@@ -147,7 +151,8 @@ if __name__ == '__main__':
         top_matches = engine.top_match(w1)
         log = '\n'.join([engine.print_match(m) for m in top_matches])
         print(f'top match:\n{log}')
-        engine.tensorboard_view()
+        words = [m.target_word for m in top_matches]
+        engine.tensorboard_view(words)
         #engine.tsne_view(top_matches)
         exit(0)
 
