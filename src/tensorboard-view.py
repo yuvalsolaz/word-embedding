@@ -14,9 +14,9 @@ LOG_DIR = '../tensorboard'
 
 def tensorboard_view(v_data, words=None):
     df = pd.DataFrame.from_records(data=v_data)
-    tf_data = tf.Variable(df[words].values.transpose())
+    tf_data = tf.Variable(df.values.transpose()) if words is None else tf.Variable(df[words].values.transpose())
 
-    ## Running TensorFlow Session
+    ## Running Tensorlow Session
     with tf.Session() as sess:
         saver = tf.train.Saver([tf_data])
         sess.run(tf_data.initializer)
@@ -29,7 +29,8 @@ def tensorboard_view(v_data, words=None):
         # Link this tensor to its metadata(Labels) file
         metadata = os.path.join(LOG_DIR, 'metadata.tsv')
         with open(metadata, 'w+') as metadata_file:
-            for word in words:
+            _words = v_data.keys() if words is None else words
+            for word in _words:
                 metadata_file.write(f'{word}\n')
 
         embedding.metadata_path = metadata
@@ -49,8 +50,8 @@ if __name__ == '__main__':
           f'words in {engine.fname}')
 
     if len(sys.argv) == 3:
-        print(f'no words in arguments ',
-               f'usage: python {sys.argv[0]} <vector_file_name> <max-words> <word1> <word2>')
+        print(f'no words in arguments view all loaded words')
+        tensorboard_view(engine._vdata)
         exit(0)
 
     w1 = sys.argv[3]
