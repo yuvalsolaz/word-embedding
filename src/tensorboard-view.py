@@ -13,8 +13,8 @@ from src.wordEmbeddingEngine import WordEmbeddingEngine
 LOG_DIR = '../tensorboard'
 
 def tensorboard_view(v_data, words=None):
-    df = pd.DataFrame(v_data)
-    tf_data = tf.Variable(df[words].values)
+    df = pd.DataFrame.from_records(data=v_data)
+    tf_data = tf.Variable(df[words].values.transpose())
 
     ## Running TensorFlow Session
     with tf.Session() as sess:
@@ -61,6 +61,7 @@ if __name__ == '__main__':
         log = '\n'.join([engine.print_match(m) for m in top_matches])
         print(f'top match:\n{log}')
         words = [m.target_word for m in top_matches]
+        words.append('blue')
         tensorboard_view(engine._vdata, words)
         exit(0)
 
