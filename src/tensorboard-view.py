@@ -8,9 +8,9 @@ from sklearn.manifold import TSNE
 import tensorflow as tf
 from tensorflow.contrib.tensorboard.plugins import projector
 
-from src.wordEmbeddingEngine import WordEmbeddingEngine
+from wordEmbeddingEngine import WordEmbeddingEngine
 
-LOG_DIR = '../tensorboard'
+LOG_DIR = './tensorboard'
 
 def tensorboard_view(v_data, words=None):
     df = pd.DataFrame.from_records(data=v_data)
@@ -33,10 +33,11 @@ def tensorboard_view(v_data, words=None):
             for word in _words:
                 metadata_file.write(f'{word}\n')
 
-        embedding.metadata_path = metadata
+        embedding.metadata_path = 'metadata.tsv'
 
         # Saves a config file that TensorBoard will read during startup.
         projector.visualize_embeddings(tf.summary.FileWriter(LOG_DIR), config)
+        print(f'create logs on {LOG_DIR}')
 
 if __name__ == '__main__':
     if len(sys.argv) < 3 :
@@ -50,31 +51,21 @@ if __name__ == '__main__':
           f'words in {engine.fname}')
 
     if len(sys.argv) == 3:
-        print(f'no words in arguments view all loaded words')
+        print(f'no words file in arguments view all loaded words')
         tensorboard_view(engine._vdata)
         exit(0)
 
-    w1 = sys.argv[3]
+    word_file = sys.argv[3]
 
-    # if word supplied find top ten matches by distance
-    if len(sys.argv) == 4:
-        top_matches = engine.top_match(w1)
-        log = '\n'.join([engine.print_match(m) for m in top_matches])
-        print(f'top match:\n{log}')
-        words = [m.target_word for m in top_matches]
-        words.append('blue')
+    # if word file supplied load and view words from given file
+    words = []
+    try:
+        with open(word_file) as file:
+            for line in file:
+                words.append(line.rstrip())
+        print(f'view {len(words)}  words ')
         tensorboard_view(engine._vdata, words)
-        exit(0)
+    except FileExistsError:
+        print (f'error opening file {word_file}')
 
-# refernce
-# ----------------------------------------------------------------------------
 
-def tsne_view(self, words):
-    tsne = TSNE()
-    embedding = tf.Variable(self.m[:100])
-    # embed_tsne = tsne.fit_transform(embedding[:words, :])
-    embed_tsne = tsne.fit_transform(embedding)
-    fig, ax = plt.subplots(figsize=(14, 14))
-    for idx in range(words):
-        plt.scatter(*embed_tsne[idx, :], color='steelblue')
-        plt.annotate(int_to_vocab[idx], (embed_tsne[idx, 0], embed_tsne[idx, 1]), alpha=0.7)
