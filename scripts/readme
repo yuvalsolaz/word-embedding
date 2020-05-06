@@ -1,5 +1,6 @@
 
 installation:
+	pip install googletrans
 	chmod a+x toeng toheb
 	sudo cp toeng toheb /usr/local/bin
 
