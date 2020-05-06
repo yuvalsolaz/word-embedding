@@ -1,0 +1,12 @@
+
+installation:
+	chmod a+x toeng toheb
+	sudo cp toeng toheb /usr/local/bin
+
+usage:
+
+  echo غير معالَج  | toeng
+  echo غير معالَج  | toheb 
+  echo اللغة هي نظام اتصال منظم. اللغة ، بالمعنى الأوسع ، هي طريقة الاتصال التي تنطوي على استخدام - وخاصة اللغة البشرية | toeng | grep lang
+  echo اللغة هي نظام اتصال منظم. اللغة ، بالمعنى الأوسع ، هي طريقة الاتصال التي تنطوي على استخدام - وخاصة اللغة البشرية | toeng | grep human | toheb
+
