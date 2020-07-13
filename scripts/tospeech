@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+import sys,io
+from gtts import gTTS
+
+try:
+    input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
+    text = 'hello world' #input_stream.read()
+
+    speech = gTTS(text=text, lang='en', slow=False)
+    with open(r'/home/yuval/2_b_del/text.mp3','wb') as outfile:
+        speech.write_to_fp(outfile)
+
+except KeyboardInterrupt:
+    sys.stdout.flush()
+    pass
