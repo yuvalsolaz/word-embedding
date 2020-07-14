@@ -1,0 +1,20 @@
+
+installation:
+	pip install googletrans
+	chmod a+x toeng toheb
+	sudo cp toeng toheb /usr/local/bin
+
+for tospeech:
+    sudo apt-get install ffmpeg libavcodec-extra
+    pip install pydub
+
+
+usage:
+
+  echo غير معالَج  | toeng
+  echo غير معالَج  | toheb 
+  echo اللغة هي نظام اتصال منظم. اللغة ، بالمعنى الأوسع ، هي طريقة الاتصال التي تنطوي على استخدام - وخاصة اللغة البشرية | toeng | grep lang
+  echo اللغة هي نظام اتصال منظم. اللغة ، بالمعنى الأوسع ، هي طريقة الاتصال التي تنطوي على استخدام - وخاصة اللغة البشرية | toeng | grep human | toheb
+
+  echo 'hello world' | tospeech
+  echo مرحبا بالعالم | toeng | tospeech
