@@ -10,12 +10,11 @@ audio_file = r'text.mp3'
 
 try:
     input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
-    text = 'hello world' #input_stream.read()
+    text = input_stream.read()
+    print(f'Playing {text}')
 
     speech = gTTS(text=text, lang='en', slow=False)
     speech.save(audio_file)
-
-    print(f'Playing {audio_file}')
     audio = AudioSegment.from_mp3(audio_file)
     play(audio)
 
