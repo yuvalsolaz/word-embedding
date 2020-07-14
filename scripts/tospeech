@@ -3,13 +3,23 @@
 import sys,io
 from gtts import gTTS
 
+from pydub import AudioSegment
+from pydub.playback import play
+
+audio_file = r'text.mp3'
+
 try:
     input_stream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
     text = 'hello world' #input_stream.read()
 
     speech = gTTS(text=text, lang='en', slow=False)
-    with open(r'/home/yuval/2_b_del/text.mp3','wb') as outfile:
-        speech.write_to_fp(outfile)
+    speech.save(audio_file)
+
+    print(f'Playing {audio_file}')
+    audio = AudioSegment.from_mp3(audio_file)
+    play(audio)
+
+
 
 except KeyboardInterrupt:
     sys.stdout.flush()
