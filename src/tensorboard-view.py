@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import tensorflow as tf
-from tensorflow.contrib.tensorboard.plugins import projector
+from tensorboard.plugins import projector
 
 from wordEmbeddingEngine import WordEmbeddingEngine
 
@@ -25,19 +25,30 @@ def tensorboard_view(v_data, words=None):
         # One can add multiple embeddings.
         embedding = config.embeddings.add()
         embedding.tensor_name = tf_data.name
+        # Specify where you find the sprite (we will create this later)
+        path_for_mnist_sprites = os.path.join(LOG_DIR, 'mnistdigits.png')
+        embedding.sprite.image_path = path_for_mnist_sprites
+        embedding.sprite.single_image_dim.extend([28, 28])
 
         # Link this tensor to its metadata(Labels) file
-        metadata = os.path.join(LOG_DIR, 'metadata.tsv')
-        with open(metadata, 'w+') as metadata_file:
+        path_for_metadata = os.path.join(LOG_DIR, 'metadata.tsv')
+        with open(path_for_metadata, 'w+') as metadata_file:
             _words = v_data.keys() if words is None else words
             for word in _words:
                 metadata_file.write(f'{word}\n')
 
-        embedding.metadata_path = 'metadata.tsv'
+        embedding.metadata_path = path_for_metadata
+
 
         # Saves a config file that TensorBoard will read during startup.
-        projector.visualize_embeddings(tf.summary.FileWriter(LOG_DIR), config)
+
+        tf.compat.v1.disable_eager_execution()
+        projector.visualize_embeddings( tf.compat.v1.summary.FileWriter(LOG_DIR), config)
+
         print(f'create logs on {LOG_DIR}')
+
+
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 3 :
@@ -61,8 +72,9 @@ if __name__ == '__main__':
     words = []
     try:
         with open(word_file) as file:
-            for line in file:
-                words.append(line.rstrip())
+            for line in file :
+                if line.rstrip() != '':
+                    words.append(line.rstrip())
         print(f'view {len(words)}  words ')
         tensorboard_view(engine._vdata, words)
     except FileExistsError:
