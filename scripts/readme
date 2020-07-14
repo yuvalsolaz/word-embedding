@@ -1,12 +1,13 @@
 
 installation:
-	pip install googletrans
+	pip install googletrans	
 	chmod a+x toeng toheb
-	sudo cp toeng toheb /usr/local/bin
+	sudo cp toeng toheb tospeech /usr/local/bin
 
 for tospeech:
     sudo apt-get install ffmpeg libavcodec-extra
     pip install pydub
+    pip install gtts
 
 
 usage:
@@ -18,3 +19,4 @@ usage:
 
   echo 'hello world' | tospeech
   echo مرحبا بالعالم | toeng | tospeech
+  cat tospeech | tospeech
